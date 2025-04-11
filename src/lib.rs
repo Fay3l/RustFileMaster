@@ -3,27 +3,26 @@ use zip::write::SimpleFileOptions;
 
 pub struct FileOps{
     pub file_name: String,
-    pub file_path: String,
 }
 
 impl FileOps {
-    pub fn new(file_name: String, file_path: String) -> Self {
-        FileOps { file_name, file_path }
+    pub fn new(file_name: String) -> Self {
+        FileOps { file_name }
     }
 
     pub fn create_file(&self) -> std::io::Result<()> {
-        let path = format!("{}/{}", self.file_path, self.file_name);
+        let path = format!("{}", self.file_name);
         std::fs::File::create(path)?;
         Ok(())
     }
 
     pub fn write_file(&self, content: &str) -> std::io::Result<()> {
-        let path = format!("{}/{}", self.file_path, self.file_name);
+        let path = format!("{}", self.file_name);
         std::fs::write(path, content)?;
         Ok(())
     }
     pub fn read_file(&self) -> std::io::Result<String> {
-        let path = format!("{}/{}", self.file_path, self.file_name);
+        let path = format!("{}", self.file_name);
         let content = std::fs::read_to_string(path)?;
         Ok(content)
     }
@@ -60,11 +59,10 @@ pub enum Format{
 
 pub struct  Compression{
     pub file_name: String,
-    pub file_path: String,
 }
 impl Compression{
     pub fn new(file_name: String, file_path: String) -> Self {
-        Compression { file_name, file_path }
+        Compression { file_name }
     }
 
     pub fn compress_file(&self,format:Format) -> std::io::Result<()> {
@@ -84,7 +82,7 @@ impl Compression{
         Ok(())
     }
     fn compress_gzip(&self) -> std::io::Result<()> {
-        let path = format!("{}/{}", self.file_path, self.file_name);
+        let path = format!("{}", self.file_name);
         let compressed_path = format!("{}.gzip", path);
         let mut input = std::fs::File::open(path)?;
         let output = std::fs::File::create(compressed_path)?;
@@ -94,7 +92,7 @@ impl Compression{
         Ok(())
     }
     fn compress_zip(&self) -> std::io::Result<()> {
-        let path = format!("{}/{}", self.file_path, self.file_name);
+        let path = format!("{}",  self.file_name);
         let compressed_path = format!("{}.zip", path);
         let mut input = std::fs::File::open(path)?;
         let output = std::fs::File::create(compressed_path)?;
@@ -106,7 +104,7 @@ impl Compression{
         Ok(())
     }
     fn compress_tar(&self) -> std::io::Result<()> {
-        let path = format!("{}/{}", self.file_path, self.file_name);
+        let path = format!("{}", self.file_name);
         let compressed_path = format!("{}.tar", path);
         let mut input = std::fs::File::open(path)?;
         let output = std::fs::File::create(compressed_path)?;
@@ -116,8 +114,8 @@ impl Compression{
         Ok(())
     }
     fn decompress_gzip(&self) -> std::io::Result<()> {
-        let compressed_path = format!("{}/{}.gzip", self.file_path, self.file_name);
-        let decompressed_path = format!("{}/{}", self.file_path, self.file_name);
+        let compressed_path = format!("{}.gzip",  self.file_name);
+        let decompressed_path = format!("{}",  self.file_name);
         let input = std::fs::File::open(compressed_path)?;
         let mut output = std::fs::File::create(decompressed_path)?;
         let mut decoder = flate2::read::GzDecoder::new(input);
@@ -125,16 +123,16 @@ impl Compression{
         Ok(())
     }
     fn decompress_zip(&self) -> std::io::Result<()> {
-        let compressed_path = format!("{}/{}.zip", self.file_path, self.file_name);
-        let decompressed_path = format!("{}/{}", self.file_path, self.file_name);
+        let compressed_path = format!("{}.zip",  self.file_name);
+        let decompressed_path = format!("{}",  self.file_name);
         let input = std::fs::File::open(compressed_path)?;
         let mut archive = zip::ZipArchive::new(input)?;
         archive.extract(decompressed_path)?;
         Ok(())
     }
     fn decompress_tar(&self) -> std::io::Result<()> {
-        let compressed_path = format!("{}/{}.tar", self.file_path, self.file_name);
-        let decompressed_path = format!("{}/{}", self.file_path, self.file_name);
+        let compressed_path = format!("{}.tar",  self.file_name);
+        let decompressed_path = format!("{}",  self.file_name);
         let input = std::fs::File::open(compressed_path)?;
         let mut archive = tar::Archive::new(input);
         archive.unpack(decompressed_path)?;
