@@ -51,37 +51,15 @@ impl std::error::Error for RustFileMasterError {
     }
 }
 
-pub enum Format{
-    Gzip,
-    Zip,
-    Tar
-}
-
 pub struct  Compression{
     pub file_name: String,
 }
 impl Compression{
-    pub fn new(file_name: String, file_path: String) -> Self {
+    pub fn new(file_name: String) -> Self {
         Compression { file_name }
     }
 
-    pub fn compress_file(&self,format:Format) -> std::io::Result<()> {
-        match format {
-            Format::Gzip => self.compress_gzip()?,
-            Format::Zip => self.compress_zip()?,
-            Format::Tar => self.compress_tar()?,
-        }
-        Ok(())
-    }
-    pub fn decompress_file(&self,format:Format) -> std::io::Result<()> {
-        match format {
-            Format::Gzip => self.decompress_gzip()?,
-            Format::Zip => self.decompress_zip()?,
-            Format::Tar => self.decompress_tar()?,
-        }
-        Ok(())
-    }
-    fn compress_gzip(&self) -> std::io::Result<()> {
+    pub fn compress_gzip(&self) -> std::io::Result<()> {
         let path = format!("{}", self.file_name);
         let compressed_path = format!("{}.gzip", path);
         let mut input = std::fs::File::open(path)?;
@@ -91,7 +69,7 @@ impl Compression{
         encoder.finish()?;
         Ok(())
     }
-    fn compress_zip(&self) -> std::io::Result<()> {
+    pub fn compress_zip(&self) -> std::io::Result<()> {
         let path = format!("{}",  self.file_name);
         let compressed_path = format!("{}.zip", path);
         let mut input = std::fs::File::open(path)?;
@@ -103,7 +81,7 @@ impl Compression{
         zip.finish()?;
         Ok(())
     }
-    fn compress_tar(&self) -> std::io::Result<()> {
+    pub fn compress_tar(&self) -> std::io::Result<()> {
         let path = format!("{}", self.file_name);
         let compressed_path = format!("{}.tar", path);
         let mut input = std::fs::File::open(path)?;
@@ -113,7 +91,7 @@ impl Compression{
         tar.finish()?;
         Ok(())
     }
-    fn decompress_gzip(&self) -> std::io::Result<()> {
+    pub fn decompress_gzip(&self) -> std::io::Result<()> {
         let compressed_path = format!("{}.gzip",  self.file_name);
         let decompressed_path = format!("{}",  self.file_name);
         let input = std::fs::File::open(compressed_path)?;
@@ -122,7 +100,7 @@ impl Compression{
         std::io::copy(&mut decoder, &mut output)?;
         Ok(())
     }
-    fn decompress_zip(&self) -> std::io::Result<()> {
+    pub fn decompress_zip(&self) -> std::io::Result<()> {
         let compressed_path = format!("{}.zip",  self.file_name);
         let decompressed_path = format!("{}",  self.file_name);
         let input = std::fs::File::open(compressed_path)?;
@@ -130,7 +108,7 @@ impl Compression{
         archive.extract(decompressed_path)?;
         Ok(())
     }
-    fn decompress_tar(&self) -> std::io::Result<()> {
+    pub fn decompress_tar(&self) -> std::io::Result<()> {
         let compressed_path = format!("{}.tar",  self.file_name);
         let decompressed_path = format!("{}",  self.file_name);
         let input = std::fs::File::open(compressed_path)?;
