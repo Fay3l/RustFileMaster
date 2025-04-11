@@ -10,7 +10,9 @@ description="RustFileMaster is a Rust library designed to simplify and optimize 
 keywords=["file","compression","encryption"]
 
 [dependencies]
+aes = "0.8.4"
 anyhow = "1.0.97"
 flate2 = "1.1.1"
 reqwest = "0.12.15"
 tokio = {version="1.44.2",features=["full"]}
+zip = "2.6.1"

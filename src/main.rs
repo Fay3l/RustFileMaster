@@ -1,4 +1,4 @@
-pub mod rust_file_master;
+pub mod lib;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
