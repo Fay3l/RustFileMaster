@@ -1,4 +1,5 @@
 use aes::{cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit}, Aes128};
+use zip::write::SimpleFileOptions;
 
 pub struct FileOps{
     pub file_name: String,
@@ -95,10 +96,11 @@ impl Compression{
     fn compress_zip(&self) -> std::io::Result<()> {
         let path = format!("{}/{}", self.file_path, self.file_name);
         let compressed_path = format!("{}.zip", path);
-        let input = std::fs::File::open(path)?;
+        let mut input = std::fs::File::open(path)?;
         let output = std::fs::File::create(compressed_path)?;
         let mut zip = zip::ZipWriter::new(output);
-        zip.start_file(self.file_name.clone(), zip::write::FileOptions::default())?;
+        let option = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        zip.start_file(self.file_name.as_str(), option)?;
         std::io::copy(&mut input, &mut zip)?;
         zip.finish()?;
         Ok(())
@@ -106,7 +108,7 @@ impl Compression{
     fn compress_tar(&self) -> std::io::Result<()> {
         let path = format!("{}/{}", self.file_path, self.file_name);
         let compressed_path = format!("{}.tar", path);
-        let input = std::fs::File::open(path)?;
+        let mut input = std::fs::File::open(path)?;
         let output = std::fs::File::create(compressed_path)?;
         let mut tar = tar::Builder::new(output);
         tar.append_file(self.file_name.clone(), &mut input)?;
@@ -151,40 +153,40 @@ impl Encryption{
         Encryption { file_name, file_path }
     }
 
-    pub fn generate_key_aes() -> Aes128{
-        let mut key = [0u8; 16];
+    pub fn generate_key_aes() -> Aes128 {
+        let key = [0u8; 16];
         let cipher = Aes128::new(&key.into());
         cipher
     }
-    pub fn aes_encrypt(data: &[u8], key: &[u8]) -> std::io::Result<Vec<u8>> {
-        let cipher = Aes128::new(key.into());
-        let mut buffer = GenericArray::clone_from_slice(data);
-        cipher.encrypt_block(&mut buffer);
-        Ok(buffer)
-    }
-    pub fn aes_decrypt(data: &[u8], key: &[u8]) -> std::io::Result<Vec<u8>> {
-        let cipher = Aes128::new(key.into());
-        let mut buffer = GenericArray::clone_from_slice(data);
-        cipher.decrypt_block(&mut buffer);
-        Ok(buffer)
+    
+    pub fn encrypt_file(&self, key: Aes128) -> std::io::Result<()> {
+        let path = format!("{}/{}", self.file_path, self.file_name);
+        let content = std::fs::read(path.clone())?;
+        let mut buffer = GenericArray::clone_from_slice(&content[..16]);
+        key.encrypt_block(&mut buffer);
+        std::fs::write(path, buffer)?;
+        Ok(())
     }
 
-    pub fn encrypt_file(&self, key: &[u8]) -> std::io::Result<()> {
+    pub fn decrypt_file(&self, key: Aes128) -> std::io::Result<()> {
         let path = format!("{}/{}", self.file_path, self.file_name);
-        let content = std::fs::read(path)?;
-        let encrypted_content = aes::Aes128Enc::(&content, key)?;
-        let encrypted_path = format!("{}.enc", path);
-        std::fs::write(encrypted_path, encrypted_content)?;
+        let content = std::fs::read(path.clone())?;
+        let mut buffer = GenericArray::clone_from_slice(&content[..16]);
+        key.decrypt_block(&mut buffer);
+        std::fs::write(path, buffer)?;
         Ok(())
     }
-    pub fn decrypt_file(&self, key: &[u8]) -> std::io::Result<()> {
-        let encrypted_path = format!("{}/{}.enc", self.file_path, self.file_name);
-        let encrypted_content = std::fs::read(encrypted_path)?;
-        let decrypted_content = aes_decrypt(&encrypted_content, key)?;
-        let decrypted_path = format!("{}/{}", self.file_path, self.file_name);
-        std::fs::write(decrypted_path, decrypted_content)?;
+    pub fn aes_encrypt(data: &[u8], key: Aes128) -> std::io::Result<()> {
+        let mut buffer = GenericArray::clone_from_slice(data);
+        key.encrypt_block(&mut buffer);
         Ok(())
     }
+    pub fn aes_decrypt(data: &[u8], key: Aes128) -> std::io::Result<()> {
+        let mut buffer = GenericArray::clone_from_slice(data);
+        key.decrypt_block(&mut buffer);
+        Ok(())
+    }
+
 }
 
 pub struct Metadata{
@@ -203,7 +205,7 @@ impl Metadata{
     }
     pub fn write_metadata(&self, metadata: &std::fs::Metadata) -> std::io::Result<()> {
         let path = format!("{}/{}", self.file_path, self.file_name);
-        let mut file = std::fs::OpenOptions::new().write(true).open(path)?;
+        let file = std::fs::OpenOptions::new().write(true).open(path)?;
         file.set_len(metadata.len())?;
         Ok(())
     }

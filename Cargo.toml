@@ -1,5 +1,5 @@
 [package]
-name = "RustFileMaster"
+name = "rust_file_master"
 version = "0.1.0"
 edition = "2021"
 license-file = "LICENSE.txt"
@@ -14,5 +14,6 @@ aes = "0.8.4"
 anyhow = "1.0.97"
 flate2 = "1.1.1"
 reqwest = "0.12.15"
+tar = "0.4.44"
 tokio = {version="1.44.2",features=["full"]}
 zip = "2.6.1"
