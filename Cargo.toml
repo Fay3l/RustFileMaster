@@ -3,15 +3,14 @@ name = "rust_file_master"
 version = "0.1.0"
 edition = "2021"
 license-file = "LICENSE.txt"
-license = "MIT"
 authors=["Fayel MOHAMED <mohamed.fayel@yahoo.com>"]
 readme="README.md"
 description="RustFileMaster is a Rust library designed to simplify and optimize file and filesystem manipulation."
 keywords=["file","compression","encryption"]
 
 [dependencies]
-aes = "0.8.4"
 anyhow = "1.0.97"
+chacha20poly1305 = "0.10.1"
 flate2 = "1.1.1"
 reqwest = "0.12.15"
 tar = "0.4.44"
