@@ -1,5 +1,6 @@
 use chacha20poly1305::{aead::{generic_array::{typenum::{UInt, UTerm}, GenericArray}, Aead, OsRng}, consts::{B0, B1}, AeadCore, KeyInit, XChaCha20Poly1305};
 use zip::write::SimpleFileOptions;
+use ri
 
 pub struct FileOps{
     pub file_name: String,
@@ -122,7 +123,7 @@ impl Compression{
 pub struct Encryption{
     pub file_name: String,
     cipher: XChaCha20Poly1305,
-    key: Vec<u8>,
+    pub key: Vec<u8>,
     nonce: GenericArray<u8, UInt<UInt<UInt<UInt<UInt<UTerm, B1>, B1>, B0>, B0>, B0>>
 }
 
@@ -147,7 +148,6 @@ impl Encryption{
     pub fn encrypt_file(&self) -> std::io::Result<()> {
         let path = format!("{}" ,self.file_name);
         let content = std::fs::read(path.clone())?;
-        println!("Content: {:?}", content);
         let encryptext = self.cipher.encrypt(&self.nonce, content.as_ref()).expect("encryption failure!");
         std::fs::write(path, encryptext)?;
         Ok(())
@@ -160,6 +160,32 @@ impl Encryption{
         let plaintext_string = String::from_utf8(plaintext).expect("Failed to convert Vec<u8> to String");
         let decrypted_path = format!("{}_decrypted", self.file_name);
         std::fs::write(decrypted_path, plaintext_string)?;
+        Ok(())
+    }
+
+    pub fn save_key_to_file(&self, key_path: &str) -> std::io::Result<()> {
+        // Encrypt the key before saving (optional, for added security)
+        let encrypted_key = base64::encode(&self.key); // Example: Base64 encoding
+        std::fs::write(key_path, encrypted_key)?;
+        Ok(())
+    }
+
+    pub fn load_key_from_file(&mut self, key_path: &str) -> std::io::Result<()> {
+        let encrypted_key = std::fs::read_to_string(key_path)?;
+        let key = base64::decode(encrypted_key).expect("Failed to decode key");
+        self.cipher = XChaCha20Poly1305::new(GenericArray::from_slice(&key));
+        self.key = key;
+        Ok(())
+    }
+
+    pub fn generate_and_save_key(&mut self, key_path: &str) -> std::io::Result<()> {
+        let key = self.generate_key();
+        self.save_key_to_file(key_path)?;
+        Ok(())
+    }
+    
+    pub fn rotate_key(&mut self, key_path: &str) -> std::io::Result<()> {
+        self.generate_and_save_key(key_path)?;
         Ok(())
     }
     
