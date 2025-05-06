@@ -19,9 +19,19 @@
 
 ### 📄 Encryption
 
-- **Supported Algorithms**: Support for common encryption algorithms like AES, RSA, and ChaCha20.
-- **Encryption and Decryption**: Functions to encrypt and decrypt files.
-- **Key Management**: Tools to securely generate, store, and manage encryption keys.
+- **Supported Algorithms**:
+  - **AES-256-GCM**: A symmetric encryption algorithm suitable for high-performance and secure file encryption.
+  - **ChaCha20-Poly1305**: A fast and secure encryption algorithm, ideal for scenarios requiring high-speed encryption.
+  - **RSA**: An asymmetric encryption algorithm, commonly used for secure key exchange and encrypting small data.
+
+- **Encryption and Decryption**:
+  - Functions to encrypt and decrypt files using the selected algorithm.
+  - Support for both symmetric (AES, ChaCha20) and asymmetric (RSA) encryption.
+
+- **Key Management**:
+  - Tools to securely generate, store, and manage encryption keys.
+  - Support for key rotation and secure storage using Base64 encoding.
+  - RSA key pair generation for public/private key encryption.
 
 ### 📄 Metadata Management
 

@@ -1,6 +1,7 @@
+use base64::Engine;
 use chacha20poly1305::{aead::{generic_array::{typenum::{UInt, UTerm}, GenericArray}, Aead, OsRng}, consts::{B0, B1}, AeadCore, KeyInit, XChaCha20Poly1305};
 use zip::write::SimpleFileOptions;
-use ri
+
 
 pub struct FileOps{
     pub file_name: String,
@@ -120,6 +121,12 @@ impl Compression{
     
 }
 
+pub enum EncryptionAlgorithm{
+    Aes256Gcm,
+    ChaCha20Poly1305,
+    Rsa,
+}
+
 pub struct Encryption{
     pub file_name: String,
     cipher: XChaCha20Poly1305,
@@ -165,14 +172,14 @@ impl Encryption{
 
     pub fn save_key_to_file(&self, key_path: &str) -> std::io::Result<()> {
         // Encrypt the key before saving (optional, for added security)
-        let encrypted_key = base64::encode(&self.key); // Example: Base64 encoding
+        let encrypted_key = base64::prelude::BASE64_STANDARD.encode(&self.key); // Example: Base64 encoding
         std::fs::write(key_path, encrypted_key)?;
         Ok(())
     }
 
     pub fn load_key_from_file(&mut self, key_path: &str) -> std::io::Result<()> {
         let encrypted_key = std::fs::read_to_string(key_path)?;
-        let key = base64::decode(encrypted_key).expect("Failed to decode key");
+        let key = base64::prelude::BASE64_STANDARD.decode(encrypted_key).expect("Failed to decode key");
         self.cipher = XChaCha20Poly1305::new(GenericArray::from_slice(&key));
         self.key = key;
         Ok(())
