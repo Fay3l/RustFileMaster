@@ -1,5 +1,7 @@
+use aes_gcm::Aes256Gcm;
 use base64::Engine;
 use chacha20poly1305::{aead::{generic_array::{typenum::{UInt, UTerm}, GenericArray}, Aead, OsRng}, consts::{B0, B1}, AeadCore, KeyInit, XChaCha20Poly1305};
+use ring::rsa;
 use zip::write::SimpleFileOptions;
 
 
@@ -129,25 +131,31 @@ pub enum EncryptionAlgorithm{
 
 pub struct Encryption{
     pub file_name: String,
-    cipher: XChaCha20Poly1305,
+    cipher_chacha: Option<XChaCha20Poly1305>,
+    cipher_aes: Option<Aes256Gcm>,
+    rsa_public_key: Option<rsa::PublicKey>,
+    rsa_private_key: Option<ring::rsa::KeyPair>,
     pub key: Vec<u8>,
-    nonce: GenericArray<u8, UInt<UInt<UInt<UInt<UInt<UTerm, B1>, B1>, B0>, B0>, B0>>
+    nonce: Option<GenericArray<u8, UInt<UInt<UInt<UInt<UInt<UTerm, B1>, B1>, B0>, B0>, B0>>>
 }
 
 impl Encryption{
     pub fn new(file_name: String) -> Self {
         Encryption { 
-            cipher: XChaCha20Poly1305::new(GenericArray::from_slice(&[0u8; 32])),
+            cipher_chacha: None,
+            cipher_aes: None,
+            rsa_public_key: None,
+            rsa_private_key: None,
             file_name,
             key: vec![],
-            nonce: GenericArray::default()
+            nonce: None,
         }
     }
 
     pub fn generate_key(&mut self) -> Vec<u8> {
         let key = XChaCha20Poly1305::generate_key(&mut OsRng);
-        self.cipher = XChaCha20Poly1305::new(key.as_slice().into());
-        self.nonce = XChaCha20Poly1305::generate_nonce(&mut OsRng);
+        self.cipher_chacha = Some(XChaCha20Poly1305::new(key.as_slice().into()));
+        self.nonce = Some(XChaCha20Poly1305::generate_nonce(&mut OsRng));
         self.key = key.to_vec();
         key.to_vec()
     }
@@ -155,7 +163,7 @@ impl Encryption{
     pub fn encrypt_file(&self) -> std::io::Result<()> {
         let path = format!("{}" ,self.file_name);
         let content = std::fs::read(path.clone())?;
-        let encryptext = self.cipher.encrypt(&self.nonce, content.as_ref()).expect("encryption failure!");
+        let encryptext = self.cipher_chacha.encrypt(&self.nonce, content.as_ref()).expect("encryption failure!");
         std::fs::write(path, encryptext)?;
         Ok(())
     }
@@ -163,7 +171,7 @@ impl Encryption{
     pub fn decrypt_file(&self) -> std::io::Result<()> {
         let path = format!("{}" ,self.file_name);
         let content = std::fs::read(path.clone())?; 
-        let plaintext = self.cipher.decrypt(&self.nonce, content.as_ref()).expect("decryption failure!");
+        let plaintext = self.cipher_chacha.decrypt(&self.nonce, content.as_ref()).expect("decryption failure!");
         let plaintext_string = String::from_utf8(plaintext).expect("Failed to convert Vec<u8> to String");
         let decrypted_path = format!("{}_decrypted", self.file_name);
         std::fs::write(decrypted_path, plaintext_string)?;
@@ -180,7 +188,7 @@ impl Encryption{
     pub fn load_key_from_file(&mut self, key_path: &str) -> std::io::Result<()> {
         let encrypted_key = std::fs::read_to_string(key_path)?;
         let key = base64::prelude::BASE64_STANDARD.decode(encrypted_key).expect("Failed to decode key");
-        self.cipher = XChaCha20Poly1305::new(GenericArray::from_slice(&key));
+        self.cipher_chacha = Some(XChaCha20Poly1305::new(GenericArray::from_slice(&key)));
         self.key = key;
         Ok(())
     }
